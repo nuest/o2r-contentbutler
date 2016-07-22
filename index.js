@@ -16,7 +16,7 @@
  */
 
 var c = require('./config/config');
-var debug = require('debug')('dataserve');
+var debug = require('debug')('contentbutler');
 var express = require('express');
 var app = express();
 var mongoose = require('mongoose');
@@ -45,7 +45,7 @@ app.get('/api/v1/compendium/:id/data/:path(*)', controllers.compendium.viewPath)
 app.get('/api/v1/job/:id/data/:path(*)', controllers.job.viewPath);
 
 app.listen(c.net.port, () => {
-  debug('dataserve '+  c.version.major + '.' + c.version.minor + '.' +
+  debug('contentbutler '+  c.version.major + '.' + c.version.minor + '.' +
       c.version.bug + ' with api version ' + c.version.api +
       ' waiting for requests on port ' + c.net.port);
 });
