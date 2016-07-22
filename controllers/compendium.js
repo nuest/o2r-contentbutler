@@ -36,15 +36,20 @@ exports.viewPath = (req, res) => {
         debug(localpath);
         fs.accessSync(localpath); //throws if does not exist
         if(size) {
-          resize(localpath, size, (finalpath, err) => {
-            debug('returned' + finalpath + err);
-            if (err) throw (err);
+          resize(localpath, size, (finalpath, err, code) => {
+            if (err) {
+              var status = code || 500;
+              res.status(status).send(JSON.stringify({ error: err}));
+              return;
+            }
+            debug('returned ' + finalpath);
             res.sendFile(finalpath);
           });
         } else {
           res.sendFile(localpath);
         }
       } catch (e) {
+        debug(e);
         res.status(500).send(JSON.stringify({ error: 'internal error', e}));
         return;
       }

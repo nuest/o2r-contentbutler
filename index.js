@@ -23,7 +23,7 @@ var mongoose = require('mongoose');
 
 // check fs & create dirs if necessary
 var fse = require('fs-extra');
-fse.mkdirsSync(c.fs.imgtmp);
+fse.mkdirsSync(c.fs.tmp);
 
 
 mongoose.connect(c.mongo.location + c.mongo.collection);

@@ -43,7 +43,7 @@ c.fs.base       = env.MUNCHER_BASEPATH || '/tmp/muncher/';
 c.fs.incoming   = c.fs.base + 'incoming/';
 c.fs.compendium = c.fs.base + 'compendium/';
 c.fs.job        = c.fs.base + 'job/';
-c.fs.imgtmp     = c.fs.base + 'imgtmp/';
+c.fs.tmp     = c.fs.base + 'imgtmp/';
 c.fs.delete_inc = true;
 
 // api key for uploading new compenidum
