@@ -28,9 +28,9 @@ c.version.bug    = 0;
 c.version.api    = 1;
 
 // network & database
-c.net.port         = env.MUNCHER_PORT || 8081;
-c.mongo.location   = env.MUNCHER_MONGODB || 'mongodb://localhost/';
-c.mongo.collection = env.MUNCHER_MONGODB_COLLECTION || 'muncher';
+c.net.port         = env.CONTENTBUTLER_PORT || 8081;
+c.mongo.location   = env.CONTENTBUTLER_MONGODB || 'mongodb://localhost/';
+c.mongo.collection = env.CONTENTBUTLER_MONGODB_COLLECTION || 'muncher';
 c.mongo.creds      = {};
 
 // fix mongo location if trailing slash was omitted
@@ -39,18 +39,11 @@ if (c.mongo.location[c.mongo.location.length-1] !== '/') {
 }
 
 // fs paths
-c.fs.base       = env.MUNCHER_BASEPATH || '/tmp/muncher/';
+c.fs.base       = env.CONTENTBUTLER_BASEPATH || '/tmp/muncher/';
 c.fs.incoming   = c.fs.base + 'incoming/';
 c.fs.compendium = c.fs.base + 'compendium/';
 c.fs.job        = c.fs.base + 'job/';
 c.fs.tmp     = c.fs.base + 'imgtmp/';
 c.fs.delete_inc = true;
-
-// api key for uploading new compenidum
-c.api_key       = env.MUNCHER_APIKEY || 'CHANGE_ME';
-
-// muncher behaviour & defaults
-c.list_limit           = 100; // amount of results per page
-c.id_length            = 5;   // length of job & compendium ids [0-9,a-z,A-Z]
 
 module.exports = c;
