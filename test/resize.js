@@ -7,8 +7,8 @@ const resize    = require('../lib/resize');
 describe('lib/resize', () => {
   describe('hashName', () => {
     it('should compute matching hash', () => {
-      var compareHash = '1f6f8417f0fafc43815e166a7cb041af13ba1ca3982c55cd56de1aa685cd84b5';
-      var computeHash = resize.hashName('filepath', '42');
+      let compareHash = '1f6f8417f0fafc43815e166a7cb041af13ba1ca3982c55cd56de1aa685cd84b5';
+      let computeHash = resize.hashName('filepath', '42');
       assert.equal(compareHash, computeHash, 'hashes not equal');
     });
   });
