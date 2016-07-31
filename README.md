@@ -7,6 +7,20 @@ Node.js implementation of the `/api/v1/compendium/:id/data` and `/api/v1/job/:id
 
 Besides Node.js, this project requires the Image Magick tool `convert`.
 
+## Testing
+
+Needs a completely new environment (empty database), preferably started with the docker-compose files.
+
+```
+npm install
+npm install -g mocha
+docker-compose up -d
+sleep 10
+mocha
+docker-compose down -v
+
+```
+
 ## License
 
 o2r contentbutler is licensed under Apache License, Version 2.0, see file LICENSE.
