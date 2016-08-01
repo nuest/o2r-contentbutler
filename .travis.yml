@@ -13,7 +13,7 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y mongodb
   - docker pull o2rproject/o2r-muncher
-  - docker run -d -p 127.0.0.1:8080:8080 -v MUNCHER_BASEPATH:MUNCHER_BASEPATH o2rproject/o2r-muncher
+  - docker run -d -p 127.0.0.1:8080:8080 -v $MUNCHER_BASEPATH:$MUNCHER_BASEPATH o2rproject/o2r-muncher
 install:
   - npm install
   - npm install -g mocha
