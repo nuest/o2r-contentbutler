@@ -5,13 +5,15 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "startlog": "DEBUG=* node index.js",
+    "debug": "DEBUG=* node debug index.js",
     "test": "mocha"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/o2r-project/o2r-contentbutler.git"
   },
-  "author": "o2r project",
+  "author": "o2r project (http://o2r.info)",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/o2r-project/o2r-contentbutler/issues"
