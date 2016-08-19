@@ -15,37 +15,106 @@
  *
  */
 
-var c = require('./config/config');
+var config = require('./config/config');
 var debug = require('debug')('contentbutler');
-var express = require('express');
-var app = express();
 var mongoose = require('mongoose');
 
 // check fs & create dirs if necessary
 var fse = require('fs-extra');
-fse.mkdirsSync(c.fs.tmp);
+fse.mkdirsSync(config.fs.tmp);
 
-
-mongoose.connect(c.mongo.location + c.mongo.collection);
+mongoose.connect(config.mongo.location + config.mongo.database);
 mongoose.connection.on('error', () => {
-  console.log('could not connect to mongodb on ' + c.mongo.location + c.mongo.collection +', ABORT');
+  console.log('could not connect to mongodb on ' + config.mongo.location + config.mongo.collection +', ABORT');
   process.exit(2);
 });
+
+// Express modules and tools
+var compression = require('compression');
+var express = require('express');
+var app = express();
+app.use(compression());
 
 app.use((req, res, next) => {
   debug(req.method + ' ' + req.path);
   next();
 });
 
-controllers = {};
+// Passport & session modules for authenticating users.
+var User = require('./lib/model/user');
+var passport = require('passport');
+var session = require('express-session');
+var MongoDBStore = require('connect-mongodb-session')(session);
+
+// load controllers
+var controllers = {};
 controllers.compendium = require('./controllers/compendium');
 controllers.job = require('./controllers/job');
 
+/*
+ *  Authentication & Authorization
+ *  This is be needed in every service that wants to check if a user is authenticated.
+ */
+
+// minimal serialize/deserialize to make authdetails cookie-compatible.
+passport.serializeUser((user, cb) => {
+  cb(null, user.orcid);
+});
+passport.deserializeUser((id, cb) => {
+  debug("Deserialize for %s", id);
+  User.findOne({orcid: id}, (err, user) => {
+    if (err) cb(err);
+    cb(null, user);
+  });
+});
+
+// configure express-session, stores reference to authdetails in cookie.
+// authdetails themselves are stored in MongoDBStore
+var mongoStore = new MongoDBStore({
+  uri: config.mongo.location + config.mongo.database,
+  collection: 'sessions'
+});
+
+mongoStore.on('error', err => {
+  debug(err);
+});
+
+app.use(session({
+  secret: config.sessionsecret,
+  resave: true,
+  saveUninitialized: true,
+  maxAge: 60 * 60 * 24 * 7, // cookies become invalid after one week
+  store: mongoStore
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+/*
+ * configure routes
+ */
 app.get('/api/v1/compendium/:id/data/:path(*)', controllers.compendium.viewPath);
 app.get('/api/v1/job/:id/data/:path(*)', controllers.job.viewPath);
 
-app.listen(c.net.port, () => {
-  debug('contentbutler '+  c.version.major + '.' + c.version.minor + '.' +
-      c.version.bug + ' with api version ' + c.version.api +
-      ' waiting for requests on port ' + c.net.port);
+app.listen(config.net.port, () => {
+  debug('contentbutler '+  config.version.major + '.' + config.version.minor + '.' +
+      config.version.bug + ' with api version ' + config.version.api +
+      ' waiting for requests on port ' + config.net.port);
+});
+
+app.get('/status', function(req, res) {
+  res.setHeader('Content-Type', 'application/json');
+  if (!req.isAuthenticated() || req.user.level < config.user.level.view_status) {
+    res.status(401).send('{"error":"not authenticated or not allowed"}');
+    return;
+  }
+
+  var response = {
+    service: "contentbutler",
+    version: config.version,
+    levels: config.user.level,
+    mongodb: config.mongo,
+    filesystem: config.fs
+  };
+  res.send(response);
 });

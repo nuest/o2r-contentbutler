@@ -23,15 +23,14 @@ var env = process.env;
 
 // Information about muncher
 c.version.major  = 0;
-c.version.minor  = 1;
+c.version.minor  = 2;
 c.version.bug    = 0;
 c.version.api    = 1;
 
 // network & database
 c.net.port         = env.CONTENTBUTLER_PORT || 8081;
 c.mongo.location   = env.CONTENTBUTLER_MONGODB || 'mongodb://localhost/';
-c.mongo.collection = env.CONTENTBUTLER_MONGODB_COLLECTION || 'muncher';
-c.mongo.creds      = {};
+c.mongo.database = env.CONTENTBUTLER_MONGODB_DATABASE || 'muncher';
 
 // fix mongo location if trailing slash was omitted
 if (c.mongo.location[c.mongo.location.length-1] !== '/') {
@@ -45,5 +44,13 @@ c.fs.compendium = c.fs.base + 'compendium/';
 c.fs.job        = c.fs.base + 'job/';
 c.fs.tmp     = c.fs.base + 'imgtmp/';
 c.fs.delete_inc = true;
+
+// session secret
+c.sessionsecret = env.SESSION_SECRET || 'o2r';
+
+// authentication levels
+c.user = {};
+c.user.level = {};
+c.user.level.view_status = 500;
 
 module.exports = c;
