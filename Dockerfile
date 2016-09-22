@@ -19,10 +19,20 @@ RUN apk add --no-cache \
     nodejs \
     imagemagick \
     git \
+    ca-certificates \
+    wget \
+  && update-ca-certificates \
   && git clone --depth 1 -b master https://github.com/o2r-project/o2r-contentbutler /contentbutler \
+  && wget -O /sbin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.1.3/dumb-init_1.1.3_amd64 \
+  && chmod +x /sbin/dumb-init \
+  && apk del \
+    git \
+    ca-certificates \
+    wget \
   && rm -rf /var/cache
 
 WORKDIR /contentbutler
 RUN npm install --production
 
-CMD npm start
+ENTRYPOINT ["/sbin/dumb-init", "--"]
+CMD ["npm", "start" ]
