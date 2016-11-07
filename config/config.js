@@ -33,7 +33,7 @@ c.mongo.location   = env.CONTENTBUTLER_MONGODB || 'mongodb://localhost/';
 c.mongo.database = env.CONTENTBUTLER_MONGODB_DATABASE || 'muncher';
 c.mongo.inital_connection_attempts = 30;
 c.mongo.inital_connection_max_delay = 5000;
-c.mongo.inital_connection_initial_delay = 10;
+c.mongo.inital_connection_initial_delay = 1000;
 
 // fix mongo location if trailing slash was omitted
 if (c.mongo.location[c.mongo.location.length-1] !== '/') {
