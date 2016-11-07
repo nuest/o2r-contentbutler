@@ -15,24 +15,25 @@
  *
  */
 
-var config = require('./config/config');
-var debug = require('debug')('contentbutler');
-var mongoose = require('mongoose');
+const config = require('./config/config');
+const debug = require('debug')('contentbutler');
+const mongoose = require('mongoose');
+const backoff = require('backoff');
 
 // check fs & create dirs if necessary
-var fse = require('fs-extra');
+const fse = require('fs-extra');
 fse.mkdirsSync(config.fs.tmp);
 
-mongoose.connect(config.mongo.location + config.mongo.database);
-mongoose.connection.on('error', () => {
-  console.log('could not connect to mongodb on ' + config.mongo.location + config.mongo.collection +', ABORT');
-  process.exit(2);
+const dbURI = config.mongo.location + config.mongo.database;
+mongoose.connect(dbURI);
+mongoose.connection.on('error', (err) => {
+  debug('Could not connect to MongoDB @ %s: %s', dbURI, err);
 });
 
 // Express modules and tools
-var compression = require('compression');
-var express = require('express');
-var app = express();
+const compression = require('compression');
+const express = require('express');
+const app = express();
 app.use(compression());
 
 app.use((req, res, next) => {
@@ -62,59 +63,116 @@ passport.serializeUser((user, cb) => {
 });
 passport.deserializeUser((id, cb) => {
   debug("Deserialize for %s", id);
-  User.findOne({orcid: id}, (err, user) => {
+  User.findOne({ orcid: id }, (err, user) => {
     if (err) cb(err);
     cb(null, user);
   });
 });
 
-// configure express-session, stores reference to authdetails in cookie.
-// authdetails themselves are stored in MongoDBStore
-var mongoStore = new MongoDBStore({
-  uri: config.mongo.location + config.mongo.database,
-  collection: 'sessions'
-});
 
-mongoStore.on('error', err => {
-  debug(err);
-});
+function initApp(callback) {
+  debug('Initialize application');
 
-app.use(session({
-  secret: config.sessionsecret,
-  resave: true,
-  saveUninitialized: true,
-  maxAge: 60 * 60 * 24 * 7, // cookies become invalid after one week
-  store: mongoStore
-}));
+  try {
+    // configure express-session, stores reference to authdetails in cookie.
+    // authdetails themselves are stored in MongoDBStore
+    var mongoStore = new MongoDBStore({
+      uri: dbURI,
+      collection: 'sessions'
+    });
 
-app.use(passport.initialize());
-app.use(passport.session());
+    mongoStore.on('error', err => {
+      debug('Error connecting with MongoStore: %s', err);
+      callback(err);
+    });
 
-/*
- * configure routes
- */
-app.get('/api/v1/compendium/:id/data/:path(*)', controllers.compendium.viewPath);
-app.get('/api/v1/job/:id/data/:path(*)', controllers.job.viewPath);
+    app.use(session({
+      secret: config.sessionsecret,
+      resave: true,
+      saveUninitialized: true,
+      maxAge: 60 * 60 * 24 * 7, // cookies become invalid after one week
+      store: mongoStore
+    }));
 
-app.listen(config.net.port, () => {
-  debug('contentbutler '+  config.version.major + '.' + config.version.minor + '.' +
-      config.version.bug + ' with api version ' + config.version.api +
-      ' waiting for requests on port ' + config.net.port);
-});
+    app.use(passport.initialize());
+    app.use(passport.session());
 
-app.get('/status', function(req, res) {
-  res.setHeader('Content-Type', 'application/json');
-  if (!req.isAuthenticated() || req.user.level < config.user.level.view_status) {
-    res.status(401).send('{"error":"not authenticated or not allowed"}');
-    return;
+    /*
+     * configure routes
+     */
+    app.get('/api/v1/compendium/:id/data/:path(*)', controllers.compendium.viewPath);
+    app.get('/api/v1/job/:id/data/:path(*)', controllers.job.viewPath);
+
+    app.get('/status', function (req, res) {
+      res.setHeader('Content-Type', 'application/json');
+      if (!req.isAuthenticated() || req.user.level < config.user.level.view_status) {
+        res.status(401).send('{"error":"not authenticated or not allowed"}');
+        return;
+      }
+
+      var response = {
+        service: "contentbutler",
+        version: config.version,
+        levels: config.user.level,
+        mongodb: config.mongo,
+        filesystem: config.fs
+      };
+      res.send(response);
+    });
+
+    app.listen(config.net.port, () => {
+      debug('contentbutler ' + config.version.major + '.' + config.version.minor + '.' +
+        config.version.bug + ' with API version ' + config.version.api +
+        ' waiting for requests on port ' + config.net.port);
+    });
+
+  } catch (err) {
+    callback(err);
   }
 
-  var response = {
-    service: "contentbutler",
-    version: config.version,
-    levels: config.user.level,
-    mongodb: config.mongo,
-    filesystem: config.fs
-  };
-  res.send(response);
+  callback(null);
+}
+
+
+// auto_reconnect is on by default and only for RE(!)connects, not for the initial attempt: http://bites.goodeggs.com/posts/reconnecting-to-mongodb-when-mongoose-connect-fails-at-startup/
+var dbBackoff = backoff.fibonacci({
+  randomisationFactor: 0,
+  initialDelay: config.mongo.inital_connection_initial_delay,
+  maxDelay: config.mongo.inital_connection_max_delay
 });
+
+dbBackoff.failAfter(config.mongo.inital_connection_attempts);
+dbBackoff.on('backoff', function (number, delay) {
+  debug('Trying to connect to MongoDB (#%s) in %sms', number, delay);
+});
+dbBackoff.on('ready', function (number, delay) {
+  debug('Connect to MongoDB (#%s)', number, delay);
+  mongoose.createConnection(dbURI, (err) => {
+    if (err) {
+      debug('Error during connect: %s', err);
+      mongoose.disconnect(() => {
+        debug('Mongoose: Disconnected all connections.');
+      });
+      dbBackoff.backoff();
+    } else {
+      // delay app startup to when MongoDB is available
+      debug('Initial connection open to %s: %s', dbURI, mongoose.connection.readyState);
+      initApp((err) => {
+        if (err) {
+          debug('Error during init!\n%s', err);
+          mongoose.disconnect(() => {
+            debug('Mongoose: Disconnected all connections.');
+          });
+          dbBackoff.backoff();
+        }
+        debug('Started application.');
+      });
+    }
+  });
+});
+dbBackoff.on('fail', function () {
+  debug('Eventually giving up to connect to MongoDB');
+  process.exit(1);
+});
+
+dbBackoff.backoff();

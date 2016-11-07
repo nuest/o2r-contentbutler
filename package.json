@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/o2r-project/o2r-contentbutler#readme",
   "dependencies": {
+    "backoff": "^2.5.0",
     "compression": "^1.6.2",
     "connect-mongodb-session": "^1.1.1",
     "debug": "^2.2.0",
