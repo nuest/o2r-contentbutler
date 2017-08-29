@@ -6,7 +6,7 @@ Node.js implementation of the `/api/v1/compendium/:id/data` and `/api/v1/job/:id
 
 ## Requirements
 
-Besides Node.js (`>= 6.x`), this project requires the Image Magick tool `convert`.
+Besides Node.js (`>= 6.x`), this project requires the ImageMagick tool `convert`.
 
 ## Run locally
 
@@ -56,4 +56,4 @@ The file `Dockerfile` describes the Docker image published at [Docker Hub](https
 
 o2r contentbutler is licensed under Apache License, Version 2.0, see file LICENSE.
 
-Copyright (C) 2016 - o2r project.
+Copyright (C) 2017 - o2r project.
