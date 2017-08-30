@@ -24,16 +24,21 @@
     "compression": "^1.6.2",
     "connect-mongodb-session": "^1.1.1",
     "debug": "^3.0.1",
+    "directory-tree": "^2.0.0",
     "express": "^4.14.0",
     "express-session": "^1.14.0",
     "fs-extra": "^4.0.1",
+    "mimos": "^3.0.3",
     "mongoose": "^4.5.5",
     "mongoose-timestamp": "^0.6.0",
     "passport": "^0.4.0"
   },
   "devDependencies": {
+    "adm-zip": "^0.4.7",
     "chai": "^4.1.1",
     "mocha": "^3.5.0",
-    "request": "^2.74.0"
+    "mongojs": "^2.4.1",
+    "request": "^2.74.0",
+    "tmp": "0.0.33"
   }
 }
