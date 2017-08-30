@@ -15,31 +15,34 @@
  *
  */
 // General modules
-var c = require('../config/config');
-var debug = require('debug')('compendium');
-var fs = require('fs');
-var Compendium = require('../lib/model/compendium');
+const config = require('../config/config');
+const debug = require('debug')('contentbutler:compendium');
+const fs = require('fs');
+const Compendium = require('../lib/model/compendium');
 
-var resize = require('../lib/resize.js').resize;
+const resize = require('../lib/resize.js').resize;
+
+const dirTree = require('directory-tree');
+const rewriteTree = require('../lib/rewrite-tree');
 
 exports.viewPath = (req, res) => {
   var path = req.params.path;
-  debug(path);
+  debug('view path %s', path);
   var size = req.query.size || null;
   var id = req.params.id;
-  Compendium.findOne({id}).select('id').exec((err, compendium) => {
+  Compendium.findOne({ id }).select('id').exec((err, compendium) => {
     if (err || compendium == null) {
-      res.status(404).send(JSON.stringify({error: 'no compendium with this id'}));
+      res.status(404).send({ error: 'no compendium with this id' });
     } else {
-      var localpath = c.fs.compendium + id + '/' + path;
+      var localpath = config.fs.compendium + id + '/' + path;
       try {
         debug(localpath);
         fs.accessSync(localpath); //throws if does not exist
-        if(size) {
+        if (size) {
           resize(localpath, size, (finalpath, err, code) => {
             if (err) {
               var status = code || 500;
-              res.status(status).send(JSON.stringify({ error: err}));
+              res.status(status).send({ error: err });
               return;
             }
             debug('returned ' + finalpath);
@@ -50,7 +53,33 @@ exports.viewPath = (req, res) => {
         }
       } catch (e) {
         debug(e);
-        res.status(500).send(JSON.stringify({ error: 'internal error', e}));
+        res.status(500).send({ error: 'internal error', e });
+        return;
+      }
+    }
+  });
+};
+
+exports.viewData = (req, res) => {
+  var id = req.params.id;
+  Compendium.findOne({ id }).select('id').exec((err, compendium) => {
+    if (err || compendium == null) {
+      res.status(404).send({ error: 'no compendium with this id' });
+    } else {
+      var localpath = config.fs.compendium + id + '/';
+      try {
+        debug('Reading file listing from %s', localpath);
+        fs.accessSync(localpath); //throws if does not exist
+
+        let answer = rewriteTree(dirTree(config.fs.compendium + id),
+          config.fs.compendium.length + config.id_length, // remove local fs path and id
+          '/api/v1/compendium/' + id + '/data' // prepend proper location
+        );
+
+        res.status(200).send(answer);
+      } catch (e) {
+        debug(e);
+        res.status(500).send({ error: 'internal error', e });
         return;
       }
     }

@@ -29,7 +29,7 @@ exports.viewPath = (req, res) => {
   var id = req.params.id;
   Job.findOne({id}).select('id').exec((err, job) => {
     if (err || job == null) {
-      res.status(404).send(JSON.stringify({error: 'no job with this id'}));
+      res.status(404).send({error: 'no job with this id'});
     } else {
       var localpath = c.fs.job + id + '/' + path;
       try {
@@ -39,7 +39,7 @@ exports.viewPath = (req, res) => {
           resize(localpath, size, (finalpath, err) => {
             if (err) {
               var status = code || 500;
-              res.status(status).send(JSON.stringify({ error: err}));
+              res.status(status).send({ error: err});
               return;
             }
             debug('returned ' + finalpath);
@@ -50,7 +50,7 @@ exports.viewPath = (req, res) => {
         }
       } catch (e) {
         debug(e);
-        res.status(500).send(JSON.stringify({ error: 'internal error', e}));
+        res.status(500).send({ error: 'internal error', e});
         return;
       }
     }

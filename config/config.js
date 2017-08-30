@@ -15,17 +15,12 @@
  *
  */
 var c = {};
-c.version = {};
 c.net = {};
 c.mongo = {};
 c.fs = {};
 var env = process.env;
 
-// Information about muncher
-c.version.major  = 0;
-c.version.minor  = 2;
-c.version.bug    = 1;
-c.version.api    = 1;
+c.version = require('../package.json').version;
 
 // network & database
 c.net.port         = env.CONTENTBUTLER_PORT || 8081;
@@ -47,6 +42,7 @@ c.fs.compendium = c.fs.base + 'compendium/';
 c.fs.job        = c.fs.base + 'job/';
 c.fs.tmp     = c.fs.base + 'imgtmp/';
 c.fs.delete_inc = true;
+c.id_length = 5;
 
 // session secret
 c.sessionsecret = env.SESSION_SECRET || 'o2r';

@@ -24,8 +24,13 @@ const backoff = require('backoff');
 const fse = require('fs-extra');
 fse.mkdirsSync(config.fs.tmp);
 
+// use ES6 promises for mongoose
+mongoose.Promise = global.Promise;
 const dbURI = config.mongo.location + config.mongo.database;
-mongoose.connect(dbURI);
+mongoose.connect(dbURI, {
+  useMongoClient: true,
+  promiseLibrary: global.Promise
+});
 mongoose.connection.on('error', (err) => {
   debug('Could not connect to MongoDB @ %s: %s', dbURI, err);
 });
@@ -78,9 +83,9 @@ function initApp(callback) {
     // authdetails themselves are stored in MongoDBStore
     var mongoStore = new MongoDBStore({
       uri: dbURI,
-      collection: 'sessions'
+      collepathction: 'sessions'
     }, err => {
-      if(err) {
+      if (err) {
         debug('Error starting MongoStore: %s', err);
       }
     });
@@ -103,6 +108,7 @@ function initApp(callback) {
     /*
      * configure routes
      */
+    app.get('/api/v1/compendium/:id/data/', controllers.compendium.viewData);
     app.get('/api/v1/compendium/:id/data/:path(*)', controllers.compendium.viewPath);
     app.get('/api/v1/job/:id/data/:path(*)', controllers.job.viewPath);
 
@@ -124,9 +130,10 @@ function initApp(callback) {
     });
 
     app.listen(config.net.port, () => {
-      debug('contentbutler ' + config.version.major + '.' + config.version.minor + '.' +
-        config.version.bug + ' with API version ' + config.version.api +
-        ' waiting for requests on port ' + config.net.port);
+      debug('contentbutler %s with API version %s waiting for requests on port %s',
+        config.version,
+        config.api_version,
+        config.net.port);
     });
 
   } catch (err) {
@@ -150,7 +157,10 @@ dbBackoff.on('backoff', function (number, delay) {
 });
 dbBackoff.on('ready', function (number, delay) {
   debug('Connect to MongoDB (#%s)', number, delay);
-  mongoose.createConnection(dbURI, (err) => {
+  mongoose.connect(dbURI, {
+    useMongoClient: true,
+    promiseLibrary: global.Promise
+  }, (err) => {
     if (err) {
       debug('Error during connect: %s', err);
       mongoose.disconnect(() => {
