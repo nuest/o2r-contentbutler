@@ -26,17 +26,15 @@ RUN apk add --no-cache \
     nodejs-npm \
     imagemagick \
     ca-certificates \
-  && update-ca-certificates \
-  && git clone --depth 1 -b master https://github.com/o2r-project/o2r-contentbutler /contentbutler \
-  && apk del \
-    git \
-    wget \
-    ca-certificates \
-  && rm -rf /var/cache
+  && git clone --depth 1 -b master https://github.com/o2r-project/o2r-contentbutler /contentbutler
 
 WORKDIR /contentbutler
 RUN npm install --production
 
+RUN apk del \
+    git \
+    ca-certificates \
+  && rm -rf /var/cache
 
 # Metadata params provided with docker build command
 ARG VERSION=dev
