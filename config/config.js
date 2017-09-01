@@ -21,6 +21,7 @@ c.fs = {};
 var env = process.env;
 
 c.version = require('../package.json').version;
+c.api_version = 1;
 
 // network & database
 c.net.port         = env.CONTENTBUTLER_PORT || 8081;
