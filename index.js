@@ -130,10 +130,11 @@ function initApp(callback) {
     });
 
     app.listen(config.net.port, () => {
-      debug('contentbutler %s with API version %s waiting for requests on port %s',
+      debug('contentbutler %s with API version %s waiting for requests on port %s and serving data from %s',
         config.version,
         config.api_version,
-        config.net.port);
+        config.net.port,
+        config.fs.base);
     });
 
   } catch (err) {
