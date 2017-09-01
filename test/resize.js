@@ -14,14 +14,16 @@
  * limitations under the License.
  *
  */
-const fs        = require('fs');
-const readline  = require('readline');
-const path      = require('path');
-const assert    = require('chai').assert;
-const request   = require('request');
-const config    = require('../config/config');
+const fs = require('fs');
+const readline = require('readline');
+const path = require('path');
+const assert = require('chai').assert;
+const request = require('request');
+const config = require('../config/config');
+const tmp = require('tmp');
+const fse = require('fs-extra');
 
-const resize    = require('../lib/resize');
+const resize = require('../lib/resize');
 
 describe('lib/resize', () => {
   describe('hashName', () => {
@@ -31,7 +33,37 @@ describe('lib/resize', () => {
       assert.equal(compareHash, computeHash, 'hashes not equal');
     });
   });
+
   describe('truncateText', () => {
+    function countFileLines(filePath) {
+      return new Promise((resolve, reject) => {
+        let lineCount = 0;
+        let i = 0;
+        fs.createReadStream(filePath)
+          .on("data", (buffer) => {
+            for (i = 0; i < buffer.length; ++i) {
+              if (buffer[i] == 10) lineCount++;
+            }
+          }).on("end", () => {
+            resolve(lineCount);
+          }).on("error", reject);
+      });
+    };
+
+    var fs_tmp = config.fs.tmp;
+
+    before(done => {
+      var tmpdir = tmp.dirSync();
+      config.fs.tmp = tmpdir.name + '/';
+      fse.mkdirsSync(config.fs.tmp);
+      done();
+    });
+
+    after(done => {
+      config.fs.tmp = fs_tmp;
+      done();
+    });
+
     it('should reject non-integer sizes', () => {
       resize.truncateText(null, 'non-integer', null, (file, err, code) => {
         assert.deepEqual(null, file, 'should not return filename');
@@ -39,11 +71,20 @@ describe('lib/resize', () => {
         assert.deepEqual(code, 400, 'should return HTTP code 400');
       });
     });
+
+    it('should reject extensions starting with .', () => {
+      resize.truncateText(null, 100, '.test', (file, err, code) => {
+        assert.deepEqual(null, file, 'should not return filename');
+        assert.include(err, 'invalid extension parameter', 'should return meaningful error');
+        assert.deepEqual(code, 400, 'should return HTTP code 400');
+      });
+    });
+
     it('should resize to n lines', (done) => {
       let n = '5';
       let m = 0;
       let testfile = path.resolve(__dirname, 'dummy.txt');
-      resize.truncateText(testfile, n, '.txt', (result) => {
+      resize.truncateText(testfile, n, 'txt', (result) => {
         let rl = readline.createInterface({
           input: fs.createReadStream(result)
         });
@@ -58,7 +99,33 @@ describe('lib/resize', () => {
         });
       });
     });
+
+    it('should give full file if n is larger than file lines', (done) => {
+      let n = '999';
+      let m = 0;
+      let testfile = path.resolve(__dirname, 'dummy.txt');
+      let actual = countFileLines(testfile);
+
+      actual.then((actual_length) => {
+        resize.truncateText(testfile, n, 'txt', (result) => {
+          let rl = readline.createInterface({
+            input: fs.createReadStream(result)
+          });
+
+          rl.on('line', (line) => {
+            m++;
+          });
+
+          rl.on('close', () => {
+            assert.equal(actual_length, m, 'result is as long as the file');
+            done();
+          });
+        });
+      }
+      );
+    });
   });
+
   describe('resizeImage', () => {
     it('should reject non-integer sizes', () => {
       resize.resizeImage(null, 'non-integer', null, (file, err, code) => {
