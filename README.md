@@ -8,6 +8,21 @@ Node.js implementation of the `/api/v1/compendium/:id/data` and `/api/v1/job/:id
 
 Besides Node.js (`>= 6.x`), this project requires the ImageMagick tool `convert`.
 
+## Configuration
+
+The configuration can be done via environment variables.
+
+- `CONTENTBUTLER_PORT`
+  Define on which port the service should listen. Defaults to `8081`.
+- `CONTENTBUTLER_MONGODB` __Required__
+  Location for MongoDB. Defaults to `mongodb://localhost/`.
+- `CONTENTBUTLER_MONGODB_DATABASE`
+  Which database inside the mongo db should be used. Defaults to `muncher`.
+- `CONTENTBUTLER_BASEPATH`
+  Base path for the compendia storage. Defaults to `/tmp/o2r`.
+- `SESSION_SECRET`
+  String used to sign the session ID cookie, must match other microservices' configurations.
+
 ## Run locally
 
 ```
