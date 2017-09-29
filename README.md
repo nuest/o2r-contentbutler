@@ -1,4 +1,4 @@
-# o2r contentbutler
+# o2r contentbutler - __DEPRECATED__, use [o2r-transporter](https://github.com/o2r-project/o2r-transporter)
 
 ![Travis CI](https://api.travis-ci.org/o2r-project/o2r-contentbutler.svg)
 
